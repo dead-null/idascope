@@ -1,6 +1,6 @@
 # IDAScope
 
-IDAScope is a Neovim plugin that integrates IDA Pro with Telescope, allowing efficient exploration and analysis of functions within IDA Pro directly from Neovim.
+IDAScope is a Neovim plugin that integrates IDA Pro with Telescope, allowing efficient exploration and analysis of functions within IDA Pro directly from Neovim (btw).
 
 ## Features
 
