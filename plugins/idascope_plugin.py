@@ -50,7 +50,7 @@ class ListFunctionsRequest(BaseFunctionRequest):
         elif "PE" in file_type:
             functions = self._get_functions_pe()
         else:
-            idaapi.msg(f"Unsupported file type: {file_type}\n")
+            idaapi.msg(f"[IDAScope] Unsupported file type: {file_type}\n")
             functions = set()
 
         return sorted(functions)
@@ -115,7 +115,7 @@ class ListFunctionsRequest(BaseFunctionRequest):
                 if name:
                     exports.append(name)
             except ValueError:
-                idaapi.msg(f"Unexpected entry format: {entry}\n")
+                idaapi.msg(f"[IDAScope] Unexpected entry format: {entry}\n")
         return sorted(set(exports))
 
     def _resolve_extern(self, ea) -> str:
@@ -346,9 +346,9 @@ class XMLRPCServerManager:
             self.thread.start()
 
             self.running = True
-            idaapi.msg(f"XML-RPC server started on {self.host}:{self.port}\n")
+            idaapi.msg(f"[IDAScope] XML-RPC server started on {self.host}:{self.port}\n")
         except Exception as e:
-            idaapi.msg(f"Failed to start server: {e}\n")
+            idaapi.msg(f"[IDAScope] Failed to start server: {e}\n")
             self.running = False
 
     def stop_server(self):
@@ -358,34 +358,34 @@ class XMLRPCServerManager:
         if not self.running and self.server is None:
             return
 
-        idaapi.msg("Stopping server...\n")
+        idaapi.msg("[IDAScope] Stopping server...\n")
         try:
             if self.server:
                 self.server.shutdown()
                 self.server.server_close()
                 self.server = None
         except Exception as e:
-            idaapi.msg(f"Error during server shutdown: {e}\n")
+            idaapi.msg(f"[IDAScope] Error during server shutdown: {e}\n")
 
         if self.thread:
             try:
                 self.thread.join(timeout=1)
                 if self.thread.is_alive():
-                    idaapi.msg("Server thread did not terminate cleanly. Forcing shutdown.\n")
+                    idaapi.msg("[IDAScope] Server thread did not terminate cleanly. Forcing shutdown.\n")
                     self.thread = None
             except Exception as e:
-                idaapi.msg(f"Error joining server thread: {e}\n")
+                idaapi.msg(f"[IDAScope] Error joining server thread: {e}\n")
             finally:
                 self.thread = None
 
         self.running = False
-        idaapi.msg("Server stopped.\n")
+        idaapi.msg("[IDAScope] Server stopped.\n")
 
     def stop_server_method(self):
         """
         XML-RPC accessible method to stop the server.
         """
-        idaapi.msg("XML-RPC shutdown signal received.\n")
+        idaapi.msg("[IDAScope] XML-RPC shutdown signal received.\n")
         self.stop_server()
 
     def toggle_server(self):
@@ -397,7 +397,7 @@ class XMLRPCServerManager:
         else:
             self.start_server()
 
-class MyIDAPlugin(idaapi.plugin_t):
+class IDAScopePlugin(idaapi.plugin_t):
     flags = idaapi.PLUGIN_KEEP
     comment = "IDA Pro Python Plugin for Telescope Integration"
     help = "This plugin integrates IDA Pro with Neovim's Telescope."
@@ -408,14 +408,14 @@ class MyIDAPlugin(idaapi.plugin_t):
         return idaapi.PLUGIN_KEEP
 
     def run(self, arg):
-        manager = XMLRPCServerManager()
-        manager.toggle_server()
+        self.manager = XMLRPCServerManager()
+        self.manager.toggle_server()
 
     def term(self):
-        idaapi.msg("IDAScope server terminated.\n")
+        self.manager.toggle_server() if XMLRPCServerManager().running else None
 
 def PLUGIN_ENTRY():
-    return MyIDAPlugin()
+    return IDAScopePlugin()
 
 if __name__ == "__main__":
     manager = XMLRPCServerManager()
