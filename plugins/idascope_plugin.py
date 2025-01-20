@@ -248,13 +248,22 @@ class DisassembleFunctionRequest(BaseFunctionRequest):
         """
         Extracts stack frame details for the given function.
         """
-        frame = idaapi.get_frame(func)
-        if not frame:
-            return []
-
         stack = []
-        for member in idautils.StructMembers(frame.id):
-            stack.append(f"// {member[1]} = 0x{member[0]:x}")
+        if hasattr(idaapi, "get_frame"): #could do backward compatibility
+            frame = idaapi.get_frame(func)
+            if not frame:
+                return []
+
+            for member in idautils.StructMembers(frame.id):
+                stack.append(f"// {member[1]} = 0x{member[0]:x}")
+        else:
+            frame_tif = idaapi.tinfo_t()
+            frame_udt = idaapi.udt_type_data_t()
+            if not idaapi.get_func_frame(frame_tif, func) or not frame_tif.get_udt_details(frame_udt):
+                return []
+            for udm in frame_udt:
+                sval = idaapi.calc_frame_offset(func, udm.offset//udm.type.get_size(), None, None)-udm.offset//4
+                stack.append(f"// {udm.name}\t =  {-1 * sval:#x} {udm.type.dstr()} {udm.cmt}")
         return stack
 
     def _get_disassembly_lines(self, func) -> list:
