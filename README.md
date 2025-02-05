@@ -46,7 +46,7 @@ Add the following to your `lazy.nvim` configuration:
 -- idascope.lua
 
 return {
-  "dead-null/idascope", url = "git@github.com:dead-null/idascope.git",
+  "dead-null/idascope", url = "https://github.com/dead-null/idascope",
 
   cmd = { "IDAScope" },
   keys = {
